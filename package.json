@@ -1,0 +1,13 @@
+{
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "three": "0.180.0"
+  },
+  "name": "casa-conejo-bunny-town",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "node prepare-public.mjs",
+    "start": "python3 -m http.server 8766 --bind 127.0.0.1 --directory out"
+  }
+}

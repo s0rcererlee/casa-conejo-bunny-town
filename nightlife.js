@@ -1,0 +1,24 @@
+import * as THREE from 'three';
+export function createNightlife(scene){
+ const warm=new THREE.MeshBasicMaterial({color:0xffca78,transparent:true}),bulbs=[],lights=[];
+ const geo=new THREE.SphereGeometry(.11,6,5);
+ function bulb(x,y,z,size=1){const o=new THREE.Mesh(geo,warm);o.position.set(x,y,z);o.scale.setScalar(size);scene.add(o);bulbs.push(o);}
+ const places=[[-9,24],[26,19],[26,7],[7,23],[-19,-43],[0,-41],[20,-41],[36,-39],[-30,39],[-43.5,-17],[-47,15],[1,42],[23,41],...[-25,-15,-5,5,15,25].map(x=>[x,61]),[-25,99],[-13,99]];
+ for(const [x,z] of places){for(let i=0;i<7;i++)bulb(x-3+i,2.65,z+3.25);const l=new THREE.PointLight(0xffbd72,0,13,2);l.position.set(x,3,z+4);scene.add(l);lights.push(l);}
+ for(const [x,z] of [[-26,84],[-10,83],[7,80],[20,78],[8,90],[29,87],[15,112]]){const l=new THREE.PointLight(0xffcc89,0,23,2);l.position.set(x,5,z);scene.add(l);lights.push(l);}
+ for(let i=0;i<80;i++){const a=i*Math.PI*2/80;bulb(-26+5.6*Math.cos(a),7+5.6*Math.sin(a),84);bulb(-10+4.5*Math.cos(a),3.6,83+4.5*Math.sin(a));bulb(15+17*Math.cos(a),5.1+2.8*Math.sin(a*2)+1.2*Math.cos(a*3),112+7.5*Math.sin(a));}
+ for(let i=0;i<24;i++){const a=i*Math.PI/12;bulb(-30+11.8*Math.cos(a),3.85,39+11.8*Math.sin(a));}
+ for(let x=-35;x<=36;x+=7)for(const z of [68,104]){bulb(x,3.6,z,1.5);const pole=new THREE.Mesh(new THREE.CylinderGeometry(.045,.045,3.6,6),new THREE.MeshStandardMaterial({color:0x685947}));pole.position.set(x,1.8,z);scene.add(pole);}
+ // Bounded particle pool: fireworks never accumulate scene objects.
+ const count=720,positions=new Float32Array(count*3),colors=new Float32Array(count*3),vel=new Float32Array(count*3),life=new Float32Array(count),base=new Float32Array(count*3);positions.fill(-999);
+ const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.BufferAttribute(positions,3));geometry.setAttribute('color',new THREE.BufferAttribute(colors,3));const material=new THREE.PointsMaterial({size:.27,vertexColors:true,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false});const fireworks=new THREE.Points(geometry,material);fireworks.frustumCulled=false;scene.add(fireworks);
+ let cursor=0,nextBurst=1,bursts=0;
+ function burst(){const center=new THREE.Vector3(-30+Math.random()*65,24+Math.random()*16,40+Math.random()*65),color=new THREE.Color().setHSL(Math.random(),.8,.65);for(let j=0;j<100;j++){const i=cursor++%count,k=i*3,a=Math.random()*Math.PI*2,h=Math.random()*2-1,speed=3+Math.random()*6;positions.set(center.toArray(),k);vel[k]=Math.sqrt(1-h*h)*Math.cos(a)*speed;vel[k+1]=h*speed;vel[k+2]=Math.sqrt(1-h*h)*Math.sin(a)*speed;life[i]=2+Math.random();base.set([color.r,color.g,color.b],k);}bursts++;}
+ const meteorGeo=new THREE.BufferGeometry();const mp=new Float32Array(6);meteorGeo.setAttribute('position',new THREE.BufferAttribute(mp,3));const meteorMat=new THREE.LineBasicMaterial({color:0xd9edff,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false});const meteor=new THREE.Line(meteorGeo,meteorMat);meteor.frustumCulled=false;scene.add(meteor);let meteorAge=4,nextMeteor=5,meteors=0;const origin=new THREE.Vector3();
+ const box=document.createElement('details');const title=document.createElement('summary');title.textContent='夜晚灯光与天空';box.append(title);const fireButton=document.createElement('button'),starButton=document.createElement('button');fireButton.textContent='烟花 · 开';starButton.textContent='流星 · 开';let fireOn=true,starsOn=true;fireButton.onclick=()=>{fireOn=!fireOn;fireButton.textContent='烟花 · '+(fireOn?'开':'关');};starButton.onclick=()=>{starsOn=!starsOn;starButton.textContent='流星 · '+(starsOn?'开':'关');};box.append(fireButton,starButton);document.getElementById('panel').append(box);
+ return {lights,bulbs,fireworks,meteor,get bursts(){return bursts},get meteors(){return meteors},update(dt,day){const night=1-THREE.MathUtils.smoothstep(day,.05,.45);warm.opacity=night;bulbs.forEach(b=>b.visible=night>.01);lights.forEach(l=>l.intensity=night*22);fireworks.visible=fireOn&&night>.5;meteor.visible=starsOn&&night>.5&&meteorAge<1.5;
+ if(night>.5){if(fireOn&&(nextBurst-=dt)<=0){burst();nextBurst=3+Math.random()*3;}if(starsOn&&(nextMeteor-=dt)<=0){origin.set(-15+Math.random()*45,48+Math.random()*10,60);meteorAge=0;nextMeteor=10+Math.random()*12;meteors++;}}else{nextBurst=1;nextMeteor=4;meteorAge=4;}
+ for(let i=0;i<count;i++)if(life[i]>0){const k=i*3;life[i]-=dt;vel[k+1]-=2*dt;for(let j=0;j<3;j++){positions[k+j]+=vel[k+j]*dt;colors[k+j]=base[k+j]*Math.max(0,Math.min(1,life[i]));}if(life[i]<=0)positions[k+1]=-999;}geometry.attributes.position.needsUpdate=true;geometry.attributes.color.needsUpdate=true;
+ meteorAge+=dt;const p=origin.clone().add(new THREE.Vector3(-22,-9,7).multiplyScalar(meteorAge));mp.set(p.toArray(),0);mp.set(p.clone().add(new THREE.Vector3(8,3.3,-2.5)).toArray(),3);meteorGeo.attributes.position.needsUpdate=true;meteorMat.opacity=Math.max(0,1-meteorAge/1.5);
+ }};
+}

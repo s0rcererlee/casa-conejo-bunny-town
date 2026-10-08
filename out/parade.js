@@ -1,0 +1,20 @@
+import * as THREE from 'three';
+export function createParade(scene,world){
+ const group=new THREE.Group();scene.add(group);group.name='Fantasy attractions and character parade';const mat=c=>new THREE.MeshStandardMaterial({color:c,roughness:.8});const gold=mat(0xe6c583),pink=mat(0xe6a6bd),blue=mat(0x86b7c8),white=mat(0xffefdc),black=mat(0x35303d),red=mat(0xcb6672);const movers=[],floats=[];
+ function ball(g,p,s,m){const o=new THREE.Mesh(new THREE.SphereGeometry(1,16,10),m);o.position.set(...p);o.scale.set(...s);g.add(o);return o;}
+ function box(g,p,s,m){const o=new THREE.Mesh(new THREE.BoxGeometry(...s),m);o.position.set(...p);g.add(o);return o;}
+ function disk(g,p,r,h,m){const o=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,40),m);o.position.set(...p);g.add(o);return o;}
+ function area(x,z,label){const g=new THREE.Group();g.position.set(x,0,z);group.add(g);disk(g,[0,.12,0],3.5,.24,white);return g;}
+ box(group,[-43,-.045,116],[29,.09,22],mat(0x92a985));box(group,[-45,.015,116],[2,.03,22],mat(0xe3cbb1));
+ for(const [x,z] of [[-51,111],[-41,111],[-51,121]])world.colliders.push([x,-z,3.5,3.5]);
+ const tea=area(-51,111,'旋转茶杯');for(let i=0;i<5;i++){const a=i*Math.PI*2/5;const cup=new THREE.Group();cup.position.set(Math.cos(a)*2.3,.4,Math.sin(a)*2.3);tea.add(cup);disk(cup,[0,0,0],.85,.12,gold);const shell=new THREE.Mesh(new THREE.CylinderGeometry(.65,.42,.7,24,1,true),i%2?pink:blue);shell.position.y=.4;cup.add(shell);const handle=new THREE.Mesh(new THREE.TorusGeometry(.27,.07,8,18),gold);handle.position.set(.7,.45,0);cup.add(handle);}movers.push(t=>tea.rotation.y=t*.24);
+ const elephants=area(-41,111,'小飞象');const rotor=new THREE.Group();elephants.add(rotor);disk(rotor,[0,1.6,0],.45,3,gold);for(let i=0;i<4;i++){const a=i*Math.PI/2,ride=new THREE.Group();ride.position.set(Math.cos(a)*2.3,1.3,Math.sin(a)*2.3);rotor.add(ride);ball(ride,[0,0,0],[.8,.45,.48],blue);ball(ride,[0,.35,-.5],[.44,.4,.4],blue);for(const side of [-1,1])ball(ride,[side*.5,.35,-.4],[.4,.42,.12],pink);ball(ride,[0,-.1,-.78],[.13,.5,.13],blue);const arm=box(rotor,[Math.cos(a)*1.2,1.2,Math.sin(a)*1.2],[2.4,.1,.1],gold);arm.rotation.y=-a;}movers.push(t=>{rotor.rotation.y=t*.22;rotor.position.y=Math.sin(t*.8)*.3;});
+ const pirate=area(-51,121,'海盗船');const swing=new THREE.Group();swing.position.y=4;pirate.add(swing);const hull=ball(swing,[0,-2.8,0],[2.5,.55,1.05],red);box(swing,[0,-2.55,0],[3.8,.1,1.4],gold);for(const x of [-1.7,1.7])box(swing,[x,-1.2,0],[.07,2.8,.07],gold);for(const x of [-3,3])box(pirate,[x,2,0],[.2,4,.2],blue);box(pirate,[0,4,0],[6,.2,.2],blue);movers.push(t=>swing.rotation.z=Math.sin(t*.8)*.65);
+ function character(parent,type){const g=new THREE.Group();parent.add(g);g.position.y=.8;
+ if(type<2){ball(g,[0,.6,0],[.42,.6,.3],type?pink:red);ball(g,[0,1.4,0],[.47,.47,.4],black);for(const side of [-1,1]){ball(g,[side*.39,1.83,0],[.29,.3,.16],black);ball(g,[side*.18,1.4,-.35],[.18,.23,.08],white);ball(g,[side*.15,1.44,-.43],[.045,.085,.025],black);ball(g,[side*.4,.3,0],[.2,.2,.17],white);}ball(g,[0,1.19,-.4],[.15,.11,.12],black);if(type){for(const side of [-1,1])ball(g,[side*.2,1.92,-.12],[.24,.15,.1],pink);}}
+ else if(type===2){ball(g,[0,.7,0],[.5,.6,.4],blue);ball(g,[0,1.4,0],[.43,.43,.4],white);ball(g,[0,1.24,-.43],[.35,.12,.27],gold);disk(g,[0,1.8,0],.42,.13,blue);}
+ else{for(const [y,r] of [[.35,.48],[.9,.36],[1.4,.3]])ball(g,[0,y,0],[r,r,r],white);ball(g,[0,1.4,-.35],[.06,.06,.25],gold);for(const side of [-1,1])ball(g,[side*.1,1.51,-.28],[.035,.035,.03],black);}
+ return g;}
+ const names=['米奇','米妮','唐老鸭','雪宝'];for(let i=0;i<4;i++){const f=new THREE.Group();group.add(f);box(f,[0,.4,0],[2.6,.5,3.3],[red,pink,blue,white][i]);disk(f,[0,.75,0],1,.3,gold);for(const x of [-1.2,1.2])for(const z of [-1.1,1.1])ball(f,[x,.25,z],[.22,.25,.25],black);const c=character(f,i);f.name=names[i]+'主题花车';floats.push(f);movers.push(t=>c.rotation.z=Math.sin(t*2+i)*.07);}
+ return {group,floats,update(time){movers.forEach(fn=>fn(time));floats.forEach((f,i)=>{const a=time*.045+i*Math.PI/2;f.position.set(-43+11*Math.cos(a),.05,84+9*Math.sin(a));f.rotation.y=-a;});}};
+}

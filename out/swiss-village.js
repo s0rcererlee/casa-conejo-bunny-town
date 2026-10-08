@@ -1,0 +1,19 @@
+import * as THREE from 'three';
+export function createSwissVillage(scene,mountains){
+ const group=new THREE.Group();group.name='Swiss alpine village and cable cars';scene.add(group);mountains.group.updateMatrixWorld(true);const ray=new THREE.Raycaster();function ground(x,z){ray.set(new THREE.Vector3(x,240,z),new THREE.Vector3(0,-1,0));return ray.intersectObjects(mountains.bands)[0]?.point.y||0;}
+ const mat=c=>new THREE.MeshStandardMaterial({color:c,roughness:.88});const wood=mat(0x956e53),cream=mat(0xe8ddc9),roof=mat(0x665a58),snow=mat(0xeff2ed),red=mat(0xb94e52),metal=mat(0x596c73),glass=mat(0x91b6c3);const snowParts=[];
+ function box(p,s,m,parent=group){const o=new THREE.Mesh(new THREE.BoxGeometry(...s),m);o.position.set(...p);parent.add(o);o.castShadow=true;o.receiveShadow=true;return o;}
+ const center=new THREE.Vector3(22,ground(22,-137),-137);const floor=center.y+1;
+ box([22,floor-.6,-137],[26,1.2,13],cream);box([22,(floor+ground(22,-131))/2,-131],[26,Math.max(1,floor-ground(22,-131)),.5],wood);
+ for(const [x,z] of [[14,-140],[23,-141],[32,-140]]){box([x,floor+1.9,z],[6,3.8,5],cream);box([x,floor+3,z],[6.1,1.4,5.1],wood);for(const side of [-1,1]){const r=box([x+side*1.6,floor+4.65,z],[3.7,.23,6],roof);r.rotation.z=-side*.48;const cap=box([x+side*1.6,floor+4.81,z],[3.75,.16,6.05],snow);cap.rotation.z=r.rotation.z;snowParts.push(cap);}for(const xx of [-1.7,0,1.7]){box([x+xx,floor+2.8,z+2.57],[.85,1,.07],glass);box([x+xx,floor+2.18,z+2.8],[1.1,.22,.45],red);}box([x,floor+1.7,z+3],[6,.18,1.3],wood);for(let j=0;j<11;j++)box([x-2.8+j*.56,floor+2.15,z+3.6],[.07,.85,.07],wood);box([x,floor+2.6,z+3.6],[6,.08,.08],wood);}
+ box([9,floor+3,-138],[2,6,2],cream);const spire=new THREE.Mesh(new THREE.ConeGeometry(1.6,2.2,4),roof);spire.rotation.y=Math.PI/4;spire.position.set(9,floor+7.1,-138);group.add(spire);const dial=new THREE.Mesh(new THREE.CircleGeometry(.57,32),snow);dial.position.set(9,floor+4.6,-136.98);group.add(dial);box([9,floor+4.77,-136.93],[.065,.4,.035],metal);box([9.18,floor+4.6,-136.92],[.4,.065,.035],metal);
+ // A Swiss flag and an open viewing terrace overlooking the snowfield.
+ box([35,floor+3,-132],[.09,6,.09],metal);box([35.8,floor+5.3,-132],[1.5,1.1,.04],red);box([35.8,floor+5.3,-131.96],[.24,.75,.02],snow);box([35.8,floor+5.3,-131.94],[.75,.24,.02],snow);
+ for(let x=10;x<35;x+=1)box([x,floor+.7,-130.6],[.07,1.4,.07],wood);box([22,floor+1.4,-130.6],[26,.09,.09],wood);
+ const start=new THREE.Vector3(8,ground(8,-124)+4,-124),end=new THREE.Vector3(27,ground(27,-171)+9,-171);
+ for(const p of [start,end]){box([p.x,p.y-1,p.z],[5,1,4],wood);box([p.x,p.y+2,p.z],[5.5,.25,4.5],roof);for(const side of [-1,1])box([p.x+side*2,p.y+.5,p.z],[.2,3,.2],metal);}
+ const cablePoints=[];for(let i=0;i<=60;i++){const t=i/60,p=start.clone().lerp(end,t);p.y=Math.max(p.y+4-Math.sin(Math.PI*t)*2,ground(p.x,p.z)+7);cablePoints.push(p);}const cable=new THREE.CatmullRomCurve3(cablePoints);for(const side of [-1,1]){const pts=cablePoints.map(p=>p.clone().add(new THREE.Vector3(side*.9,0,0)));group.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),60,.035,5,false),metal));}
+ for(const t of [.25,.6]){const p=cable.getPoint(t),base=ground(p.x,p.z);box([p.x,(p.y+base)/2,p.z],[.35,p.y-base,.35],metal);box([p.x,p.y,p.z],[3.4,.2,.25],metal);}
+ const cars=[];for(let i=0;i<6;i++){const car=new THREE.Group();group.add(car);box([0,-1.6,0],[1.55,1.2,1.3],i%2?red:cream,car);box([0,-.7,0],[1.45,.7,1.22],glass,car);box([0,-.25,0],[1.7,.14,1.45],roof,car);box([0,.1,0],[.06,.65,.06],metal,car);cars.push(car);}
+ return {group,center,cars,update(season,time){snowParts.forEach(o=>o.visible=season==='winter');cars.forEach((o,i)=>{const phase=(time*.018+i/6)%1,out=phase<.5,t=out?phase*2:2-phase*2;o.position.copy(cable.getPoint(t));o.position.x+=out?.9:-.9;o.rotation.z=Math.sin(time+i)*.025;});}};
+}
